@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <script>
 window.addEventListener('DOMContentLoaded', function () {
+  var alvos = [];
   var scripts = document.querySelectorAll('script');
   for (var i = 0; i < scripts.length; i++) {
     var s = scripts[i];
@@ -12,9 +13,10 @@ window.addEventListener('DOMContentLoaded', function () {
     if (t.indexOf('secao01') < 0) continue;
     var linhas = t.split('\n');
     var dep = 0, par = 0, col = 0, com = false, blk = false, str = null;
-    var ultimaBase = -1;
     for (var L = 0; L < linhas.length; L++) {
       var ln = linhas[L];
+      var inicio = dep;
+      var marca = /^\s*function\s/.test(ln);
       com = false;
       for (var j = 0; j < ln.length; j++) {
         var c = ln[j], n = ln[j + 1];
@@ -28,18 +30,15 @@ window.addEventListener('DOMContentLoaded', function () {
         else if (c === '{') dep++; else if (c === '}') dep--;
         else if (c === '[') col++; else if (c === ']') col--;
       }
-      if (dep === 1 && par === 0 && col === 0) ultimaBase = L;
+      if (marca) alvos.push('L' + (L + 1) + '  prof ' + inicio + '  ' + ln.trim().slice(0, 60));
     }
-    var out = 'Linhas ' + linhas.length + ' | final: chaves ' + dep + ' · parenteses ' + par + ' · colchetes ' + col + '\n';
-    out += 'Ultima linha em profundidade normal: ' + (ultimaBase + 1) + '\n\n';
-    var ini = Math.max(0, ultimaBase - 1);
-    var fim = Math.min(linhas.length - 1, ultimaBase + 12);
-    for (var k = ini; k <= fim; k++) out += (k + 1) + ': ' + linhas[k] + '\n';
-    var box = document.createElement('pre');
-    box.style.cssText = 'position:fixed;inset:0;margin:0;padding:16px;background:#111;color:#7CFC00;font:12px/1.6 monospace;z-index:99999;white-space:pre-wrap;overflow:auto';
-    box.textContent = out;
-    document.body.appendChild(box);
+    alvos.unshift('total ' + linhas.length + ' linhas · final chaves ' + dep + ' · parenteses ' + par + ' · colchetes ' + col);
   }
+  var box = document.createElement('pre');
+  box.style.cssText = 'position:fixed;inset:0;margin:0;padding:16px;background:#111;color:#7CFC00;font:12px/1.6 monospace;z-index:99999;white-space:pre-wrap;overflow:auto;cursor:pointer';
+  box.textContent = alvos.join('\n') + '\n\n(clique para fechar)';
+  box.addEventListener('click', function () { box.remove(); });
+  document.body.appendChild(box);
 });
 </script>
 </script>
