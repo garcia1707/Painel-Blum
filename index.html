@@ -2,38 +2,46 @@
 <html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="UTF-8">
-   <script>
+<script>
 window.addEventListener('DOMContentLoaded', function () {
-  var linhas = [];
   var scripts = document.querySelectorAll('script');
   for (var i = 0; i < scripts.length; i++) {
     var s = scripts[i];
     if (s.src) continue;
     var t = s.textContent;
-    if (t.indexOf('skipShell') < 0 && t.indexOf('secao01') < 0) continue;
-    var par = 0, cha = 0, col = 0, com = false, blk = false, str = null;
-    var linha = 1, quebrou = -1;
-    for (var j = 0; j < t.length; j++) {
-      var c = t[j], n = t[j + 1];
-      if (c === '\n') { linha++; com = false; continue; }
-      if (com) continue;
-      if (blk) { if (c === '*' && n === '/') { blk = false; j++; } continue; }
-      if (str) { if (c === '\\') { j++; continue; } if (c === str) str = null; continue; }
-      if (c === '/' && n === '/') { com = true; j++; continue; }
-      if (c === '/' && n === '*') { blk = true; j++; continue; }
-      if (c === '"' || c === "'" || c === '`') { str = c; continue; }
-      if (c === '(') par++; else if (c === ')') par--;
-      else if (c === '{') cha++; else if (c === '}') cha--;
-      else if (c === '[') col++; else if (c === ']') col--;
-      if ((par < 0 || cha < 0 || col < 0) && quebrou < 0) quebrou = linha;
+    if (t.indexOf('secao01') < 0) continue;
+    var linhas = t.split('\n');
+    var dep = 0, par = 0, col = 0, com = false, blk = false, str = null;
+    var ultimaBase = -1;
+    for (var L = 0; L < linhas.length; L++) {
+      var ln = linhas[L];
+      com = false;
+      for (var j = 0; j < ln.length; j++) {
+        var c = ln[j], n = ln[j + 1];
+        if (com) break;
+        if (blk) { if (c === '*' && n === '/') { blk = false; j++; } continue; }
+        if (str) { if (c === '\\') { j++; continue; } if (c === str) str = null; continue; }
+        if (c === '/' && n === '/') { com = true; break; }
+        if (c === '/' && n === '*') { blk = true; j++; continue; }
+        if (c === '"' || c === "'" || c === '`') { str = c; continue; }
+        if (c === '(') par++; else if (c === ')') par--;
+        else if (c === '{') dep++; else if (c === '}') dep--;
+        else if (c === '[') col++; else if (c === ']') col--;
+      }
+      if (dep === 1 && par === 0 && col === 0) ultimaBase = L;
     }
-    linhas.push('Script ' + (i + 1) + ' · ' + linha + ' linhas | saldo → parênteses ' + par + ' · chaves ' + cha + ' · colchetes ' + col + (quebrou > 0 ? ' | DESBALANCEOU na linha ' + quebrou : ''));
+    var out = 'Linhas ' + linhas.length + ' | final: chaves ' + dep + ' · parenteses ' + par + ' · colchetes ' + col + '\n';
+    out += 'Ultima linha em profundidade normal: ' + (ultimaBase + 1) + '\n\n';
+    var ini = Math.max(0, ultimaBase - 1);
+    var fim = Math.min(linhas.length - 1, ultimaBase + 12);
+    for (var k = ini; k <= fim; k++) out += (k + 1) + ': ' + linhas[k] + '\n';
+    var box = document.createElement('pre');
+    box.style.cssText = 'position:fixed;inset:0;margin:0;padding:16px;background:#111;color:#7CFC00;font:12px/1.6 monospace;z-index:99999;white-space:pre-wrap;overflow:auto';
+    box.textContent = out;
+    document.body.appendChild(box);
   }
-  var box = document.createElement('pre');
-  box.style.cssText = 'position:fixed;inset:0;margin:0;padding:16px;background:#111;color:#7CFC00;font:13px/1.7 monospace;z-index:99999;white-space:pre-wrap;overflow:auto';
-  box.textContent = linhas.join('\n\n');
-  document.body.appendChild(box);
 });
+</script>
 </script>
    <script>window.addEventListener('error',function(e){var d=document.createElement('div');d.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#b91c1c;color:#fff;font:12px/1.4 monospace;padding:10px;z-index:99999;white-space:pre-wrap';d.textContent='ERRO: '+e.message+' | linha '+e.lineno+':'+e.colno;(document.body||document.documentElement).appendChild(d);});</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
