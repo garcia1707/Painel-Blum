@@ -1777,8 +1777,8 @@ dialog.dlg::backdrop { background: rgba(17,17,17,.4); }
     $("#drawerTitle").textContent = "UF " + uf;
     const body = $("#drawerBody");
     body.replaceChildren();
-    const drillRows = rows("#TERRITORIO").filter(r => r.territorio && String(r.territorio).toUpperCase().includes(uf));
-    if (!hasBloco("#TERRITORIO")) {
+    const drillRows = rows("#UF_REP").filter(r => String(r.uf).toUpperCase() === String(uf).toUpperCase());
+    if (!hasBloco("#UF_REP")) {
       body.append(h("div", { class: "card" }, h("div", { class: "card-head" }, h("h3", { class: "card-title" }, "Representações na UF"), tagOrigem("SF")), h("div", { class: "kpi-value" }, D), h("div", { class: "kpi-cap" }, "Bloco de drill-down ausente no arquivo.")));
     } else {
       body.append(tabela("drawer", [
