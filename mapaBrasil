@@ -1165,6 +1165,7 @@ table.t tbody tr:last-child td{border-bottom:0;}
 .temp-MONITORAR{background:#F5B942;}
 .temp-DESENVOLVER{background:#8FB8A0;}
 .temp-SEMUF{background:#D6D3CD;}
+   .temp-SEMOP{background:#9CA3AF;}
 .temp-chip{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:middle;}
 
 /* ---------- Gauge / chips ---------- */
@@ -1346,7 +1347,8 @@ dialog.dlg::backdrop{background:rgba(17,17,17,.45);}
     { key: "ATENCAO", label: "ATENÇÃO", cls: "temp-ATENCAO" },
     { key: "MONITORAR", label: "MONITORAR", cls: "temp-MONITORAR" },
     { key: "DESENVOLVER", label: "DESENVOLVER", cls: "temp-DESENVOLVER" },
-    { key: "SEM UF", label: "SEM UF", cls: "temp-SEMUF" }
+    { key: "SEM UF", label: "SEM UF", cls: "temp-SEMUF" },
+    { key: "SEM OPERACAO", label: "SEM OPERAÇÃO", cls: "temp-SEMOP" }
   ];
   const SECOES = [
     "Visão geral", "Territórios", "Atividade", "Performance", "Qualidade",
@@ -1409,11 +1411,11 @@ dialog.dlg::backdrop{background:rgba(17,17,17,.45);}
     if (s.startsWith("ATEN")) return "ATENCAO";
     if (s.startsWith("MONIT")) return "MONITORAR";
     if (s.startsWith("DESENV")) return "DESENVOLVER";
+    if (s.startsWith("SEM OPER")) return "SEM OPERACAO";
     return "SEM UF";
   };
-  const tempLabel = (k) => (TEMPS.find(t => t.key === k) || TEMPS[4]).label;
-  const tempCls = (k) => (TEMPS.find(t => t.key === k) || TEMPS[4]).cls;
-
+   const tempLabel = (k) => (TEMPS.find(t => t.key === k) || TEMPS.find(t => t.key === "SEM UF")).label;
+  const tempCls = (k) => (TEMPS.find(t => t.key === k) || TEMPS.find(t => t.key === "SEM UF")).cls;
   // ============ PARSER ============
   function parseCSV(text) {
     const lines = text.replace(/\r/g, "").split("\n").map(l => l.trim()).filter(l => l.length);
@@ -1690,7 +1692,7 @@ dialog.dlg::backdrop{background:rgba(17,17,17,.45);}
   function mapaBrasil(ufRows) {
     const byUf = {};
     ufRows.forEach(r => byUf[String(r.uf).toUpperCase()] = r);
-    const tempColor = { CRITICO: "#B91C1C", ATENCAO: "#E8622A", MONITORAR: "#F5B942", DESENVOLVER: "#8FB8A0", "SEM UF": "#D6D3CD" };
+    const tempColor = { CRITICO: "#B91C1C", ATENCAO: "#E8622A", MONITORAR: "#F5B942", DESENVOLVER: "#8FB8A0", "SEM OPERACAO": "#9CA3AF", "SEM UF": "#D6D3CD" };
     const colorOf = (uf) => { const r = byUf[uf]; return r ? (tempColor[tempKey(r.temperatura)] || tempColor["SEM UF"]) : tempColor["SEM UF"]; };
     const box = h("div", { class: "map-wrap" });
     if (mapaGeo) {
