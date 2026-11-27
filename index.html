@@ -1901,11 +1901,12 @@ function abrirDrawer(uf) {
       } : null
     });
     const recon = card("Reconciliação", "Carteira mapeada versus base bruta", "DER",
-      h("div", { class: "grid g3" },
-        card("Mapa do Brasil por UF", "Cor por temperatura · clique numa UF para o detalhe", "DER", mapaBrasil(ufRows),
-          h("div", { class: "legend" }, TEMPS.map(t => h("span", {}, h("span", { class: "temp-chip " + t.cls }), t.label)))),
-        h("div", { class: "span-2", style: "display:flex;flex-direction:column;gap:16px;min-width:0;" }, recon)
-      ),
+      h("div", { class: "grid g2", style: "gap:10px;" },
+        kpi("Carteira mapeada", fmtInt(getRecon("carteira_mapeada")), "clientes", "DER"),
+        kpi("Fora da dimensão", fmtInt(getRecon("fora_dimensao")), "não mapeados", "DER"),
+        kpi("Base bruta", fmtInt(getRecon("base_bruta")), "registros", "MED"),
+        kpi("% mapeado", fmtPct(getRecon("pct_mapeado")), "da base bruta", "DER")
+      ));
     const terr = tabela("terr", [
       { key: "territorio", label: "Território" },
       { key: "representacao", label: "Representação" },
