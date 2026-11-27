@@ -1772,41 +1772,60 @@ dialog.dlg::backdrop { background: rgba(17,17,17,.4); }
   }
 
   // ============ DRAWER ============
-  function abrirDrawer(uf) {
+function abrirDrawer(uf) {
     const d = $("#drawer");
     $("#drawerTitle").textContent = "UF " + uf;
     const body = $("#drawerBody");
     body.replaceChildren();
-    const drillRows = rows("#TERRITORIO").filter(r => r.territorio && String(r.territorio).toUpperCase().includes(uf));
-    if (!hasBloco("#TERRITORIO")) {
-      body.append(h("div", { class: "card" }, h("div", { class: "card-head" }, h("h3", { class: "card-title" }, "Representações na UF"), tagOrigem("SF")), h("div", { class: "kpi-value" }, D), h("div", { class: "kpi-cap" }, "Bloco de drill-down ausente no arquivo.")));
+    const ufRow = rows("#UF").find(r => String(r.uf).toUpperCase() === String(uf).toUpperCase());
+    if (ufRow) {
+      const tKey = tempKey(ufRow.temperatura);
+      const tCls = tKey === "CRITICO" ? "tag-bad" : tKey === "ATENCAO" ? "tag-der" : tKey === "MONITORAR" ? "tag-warn" : "tag-ok";
+      body.append(h("div", { class: "card" },
+        h("div", { class: "card-head" },
+          h("h3", { class: "card-title" }, "Temperatura do estado"),
+          h("span", { class: "tag " + tCls }, ufRow.temperatura || D)
+        ),
+        h("div", { class: "grid g2", style: "gap:10px;" },
+          kpi("Clientes", fmtInt(ufRow.clientes), "na carteira", "DER"),
+          kpi("Cobertura", fmtPct(ufRow.cobertura), "com visita ou ligação", "DER"),
+          kpi("Visitas", fmtInt(ufRow.visitas), "no período", "MED"),
+          kpi("Ligações", fmtInt(ufRow.ligacoes), "no período", "MED"),
+          kpi("Com contato", fmtInt(ufRow.com_contato), "clientes", "DER"),
+          kpi("Índice", fmtDec(ufRow.indice, 1), "de prioridade 0-100", "DER")
+        )
+      ));
+    }
+    const repRows = rows("#UF_REP").filter(r => String(r.uf).toUpperCase() === String(uf).toUpperCase());
+    if (repRows.length) {
+      body.append(h("div", { class: "card" },
+        h("div", { class: "card-head" }, h("h3", { class: "card-title" }, "Representações nesta UF"), tagOrigem("DER")),
+        tabela("drawer", [
+          { key: "representacao", label: "Representação" },
+          { key: "clientes", label: "Clientes", num: true, fmt: fmtInt },
+          { key: "visitas", label: "Visitas", num: true, fmt: fmtInt },
+          { key: "ligacoes", label: "Ligações", num: true, fmt: fmtInt },
+          { key: "com_contato", label: "Com contato", num: true, fmt: fmtInt },
+          { key: "cobertura", label: "Cobertura", num: true, fmt: fmtPct }
+        ], repRows, { empty: "Nenhuma representação registrada nesta UF." })
+      ));
     } else {
-      body.append(tabela("drawer", [
-        { key: "representacao", label: "Representação" },
-        { key: "clientes", label: "Clientes", num: true, fmt: fmtInt },
-        { key: "visitas", label: "Visitas", num: true, fmt: fmtInt },
-        { key: "ligacoes", label: "Ligações", num: true, fmt: fmtInt },
-        { key: "cobertura", label: "Cobertura", num: true, fmt: fmtPct }
-      ], drillRows, { empty: "Nenhuma representação registrada nesta UF." }));
+      const drillRows = rows("#TERRITORIO").filter(r => r.territorio && String(r.territorio).toUpperCase().includes(uf));
+      body.append(h("div", { class: "card" },
+        h("div", { class: "card-head" }, h("h3", { class: "card-title" }, "Representações nesta UF"), tagOrigem(drillRows.length ? "DER" : "SF")),
+        drillRows.length ? tabela("drawer", [
+          { key: "representacao", label: "Representação" },
+          { key: "clientes", label: "Clientes", num: true, fmt: fmtInt },
+          { key: "visitas", label: "Visitas", num: true, fmt: fmtInt },
+          { key: "ligacoes", label: "Ligações", num: true, fmt: fmtInt },
+          { key: "cobertura", label: "Cobertura", num: true, fmt: fmtPct }
+        ], drillRows, { empty: "Nenhuma representação registrada nesta UF." }) : h("div", { class: "kpi-cap" }, "Bloco #UF_REP ausente no arquivo. Recarregue o CSV.")
+      ));
     }
     d.classList.add("open");
     d.setAttribute("aria-hidden", "false");
     $("#scrim").classList.add("open");
     $("#drawerClose").focus();
-  }
-  function fecharDrawer() {
-    $("#drawer").classList.remove("open");
-    $("#drawer").setAttribute("aria-hidden", "true");
-    $("#scrim").classList.remove("open");
-  }
-
-  // ============ SEÇÕES ============
-  function sectionHead(num, title, sub, extra) {
-    return h("div", { class: "hero-head section-head" }, h("div", {},
-      h("span", { class: "eyebrow" }, "Seção " + num),
-      h("h2", { style: "margin-top:8px;" }, title),
-      h("p", {}, sub)
-    ), extra || null);
   }
 
   function secao01() {
