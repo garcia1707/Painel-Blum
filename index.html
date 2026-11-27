@@ -1709,14 +1709,30 @@ dialog.dlg::backdrop { background: rgba(17,17,17,.4); }
     const colorOf = (uf) => { const r = byUf[uf]; return r ? (tempColor[tempKey(r.temperatura)] || tempColor["SEM UF"]) : tempColor["SEM UF"]; };
     const box = h("div", { class: "map-wrap" });
     if (mapaGeo) {
-      const feats = mapaGeo.features || [];
+          const feats = mapaGeo.features || [];
+      const COD_UF = {"11":"RO","12":"AC","13":"AM","14":"RR","15":"PA","16":"AP","17":"TO","21":"MA","22":"PI","23":"CE","24":"RN","25":"PB","26":"PE","27":"AL","28":"SE","29":"BA","31":"MG","32":"ES","33":"RJ","35":"SP","41":"PR","42":"SC","43":"RS","50":"MS","51":"MT","52":"GO","53":"DF"};
+      let gMinX = Infinity, gMinY = Infinity, gMaxX = -Infinity, gMaxY = -Infinity;
+      feats.forEach(f => {
+        const b = geoBBox(f.geometry);
+        gMinX = Math.min(gMinX, b.minX); gMaxX = Math.max(gMaxX, b.maxX);
+        gMinY = Math.min(gMinY, b.minY); gMaxY = Math.max(gMaxY, b.maxY);
+      });
+      const GBB = { minX: gMinX, minY: gMinY, maxX: gMaxX, maxY: gMaxY, cx: 0, cy: 0 };
+      const MW = 600, MH = 600, MPAD = 20;
+      const ms = Math.min((MW - MPAD * 2) / (GBB.maxX - GBB.minX || 1), (MH - MPAD * 2) / (GBB.maxY - GBB.minY || 1));
+      const mpx = (x) => MPAD + (x - GBB.minX) * ms;
+      const mpy = (y) => MH - MPAD - (y - GBB.minY) * ms;
       let paths = "";
       feats.forEach(f => {
-        const sigla = (f.properties && (f.properties.sigla || f.properties.UF || f.properties.uf)) || "";
+        const props = f.properties || {};
+        const rawCod = String(props.codarea || props.codigo || props.id || "");
+        const sigla = COD_UF[rawCod] || COD_UF[rawCod.slice(0, 2)] || "";
         const bbox = geoBBox(f.geometry);
-        const pathD = geoToPath(f.geometry, bbox);
+        const pathD = geoToPath(f.geometry, { minX: GBB.minX, minY: GBB.minY, maxX: GBB.maxX, maxY: GBB.maxY, cx: 0, cy: 0 });
         paths += `<path class="uf-path" data-uf="${sigla}" d="${pathD}" fill="${colorOf(sigla)}" tabindex="0" role="button" aria-label="UF ${sigla}"><title>${sigla}</title></path>`;
-        paths += `<text class="uf-label" x="${bbox.cx}" y="${bbox.cy}" text-anchor="middle">${sigla}</text>`;
+        const lx = mpx((bbox.minX + bbox.maxX) / 2);
+        const ly = mpy((bbox.minY + bbox.maxY) / 2);
+        paths += `<text class="uf-label" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle">${sigla}</text>`;
       });
       const svg = h("div", {});
       svg.innerHTML = `<svg class="map-svg" viewBox="0 0 600 600" role="img" aria-label="Mapa do Brasil por UF">${paths}</svg>`;
