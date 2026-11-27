@@ -1319,6 +1319,7 @@ dialog.dlg::backdrop{background:rgba(17,17,17,.45);}
   // ============ CONTRATO (estrutura, sem números) ============
   const BLOCOS = [
     { nome: "#UF", cols: ["uf","clientes","visitas","ligacoes","com_contato","cobertura","indice","temperatura","pct_adesao_topo"], obrig: true, feeds: "Mapa, tabela por UF, reconciliação e drill-down." },
+{ nome: "#UF_REP", cols: ["uf","representacao","clientes","visitas","ligacoes","com_contato","cobertura","temperatura"], obrig: false, feeds: "Popup de drill-down do mapa: representações por UF." },
     { nome: "#TERRITORIO", cols: ["territorio","representacao","clientes","visitas","ligacoes","com_contato","cobertura","indice","temperatura"], obrig: true, feeds: "Tabela de territórios." },
     { nome: "#ADCABC", cols: ["uf","clientes_topo","visitados_topo","clientes_cauda","visitados_cauda"], obrig: true, feeds: "Adesão ABC por UF." },
     { nome: "#VISITA", cols: ["representacao","visitas","clientes_visitados"], obrig: true, feeds: "Visitas por representação e KPI de visitas." },
@@ -1759,32 +1760,61 @@ dialog.dlg::backdrop{background:rgba(17,17,17,.45);}
   }
 
   // ============ DRAWER ============
-  function abrirDrawer(uf) {
+function abrirDrawer(uf) {
     const d = $("#drawer");
+    const alvo = String(uf).toUpperCase();
     $("#drawerTitle").textContent = "UF " + uf;
+    $("#drawerSub").textContent = "Temperatura do estado e representações que atuam aqui";
     const body = $("#drawerBody");
     body.replaceChildren();
-    const drillRows = rows("#UF_REP").filter(r => String(r.uf).toUpperCase() === String(uf).toUpperCase());
-    if (!hasBloco("#UF_REP")) {
-      body.append(h("div", { class: "card" }, h("div", { class: "card-head" }, h("h3", { class: "card-title" }, "Representações na UF"), tagOrigem("SF")), h("div", { class: "kpi-value" }, D), h("div", { class: "kpi-cap" }, "Bloco de drill-down ausente no arquivo.")));
-    } else {
-      body.append(tabela("drawer", [
-        { key: "representacao", label: "Representação" },
-        { key: "clientes", label: "Clientes", num: true, fmt: fmtInt },
-        { key: "visitas", label: "Visitas", num: true, fmt: fmtInt },
-        { key: "ligacoes", label: "Ligações", num: true, fmt: fmtInt },
-        { key: "cobertura", label: "Cobertura", num: true, fmt: fmtPct }
-      ], drillRows, { empty: "Nenhuma representação registrada nesta UF." }));
+
+    const estado = rows("#UF").find(r => String(r.uf).toUpperCase() === alvo);
+    if (estado) {
+      const k = tempKey(estado.temperatura);
+      body.append(h("div", { class: "card" },
+        h("div", { class: "card-head" },
+          h("div", {},
+            h("h3", { class: "card-title" }, "Temperatura do estado"),
+            h("p", { class: "card-sub" }, "Índice de prioridade " + fmtDec(estado.indice, 2))),
+          h("span", { style: "display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;" },
+            h("span", { class: "temp-chip " + tempCls(k) }), tempLabel(k))),
+        h("div", { class: "grid g2" },
+          kpi("Clientes", fmtInt(estado.clientes), "na carteira", "DER"),
+          kpi("Visitas", fmtInt(estado.visitas), "no período", "MED"),
+          kpi("Ligações", fmtInt(estado.ligacoes), "no período", "MED"),
+          kpi("Com contato", fmtInt(estado.com_contato), "clientes distintos", "DER"))
+      ));
     }
+
+    if (!hasBloco("#UF_REP")) {
+      body.append(h("div", { class: "empty" }, "Bloco #UF_REP ausente no arquivo de dados."));
+    } else {
+      const pares = rows("#UF_REP").filter(r => String(r.uf).toUpperCase() === alvo);
+      body.append(h("div", { class: "card" },
+        h("div", { class: "card-head" },
+          h("div", {},
+            h("h3", { class: "card-title" }, "Representações nesta UF"),
+            h("p", { class: "card-sub" }, pares.length + " par(es) UF × representação"))),
+        tabela("drawer_rep", [
+          { key: "representacao", label: "Representação" },
+          { key: "clientes", label: "Clientes", num: true, fmt: fmtInt },
+          { key: "visitas", label: "Visitas", num: true, fmt: fmtInt },
+          { key: "ligacoes", label: "Ligações", num: true, fmt: fmtInt },
+          { key: "cobertura", label: "Cobertura", num: true, fmt: fmtPct },
+          { key: "temperatura", label: "Diagnóstico", render: (v) => {
+              const kk = tempKey(v);
+              return h("span", { style: "display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;" },
+                h("span", { class: "temp-chip " + tempCls(kk) }), tempLabel(kk));
+            } }
+        ], pares, { empty: "Nenhuma representação registrada nesta UF." }),
+        h("p", { class: "helper" }, "SEM OPERAÇÃO indica carteira sem visita e sem ligação no período. Não é desempenho ruim — é ausência de operação.")
+      ));
+    }
+
     d.classList.add("open");
     d.setAttribute("aria-hidden", "false");
     $("#scrim").classList.add("open");
     $("#drawerClose").focus();
-  }
-  function fecharDrawer() {
-    $("#drawer").classList.remove("open");
-    $("#drawer").setAttribute("aria-hidden", "true");
-    $("#scrim").classList.remove("open");
   }
 
   // ============ SEÇÕES ============
@@ -1840,12 +1870,13 @@ dialog.dlg::backdrop{background:rgba(17,17,17,.45);}
         h("span", { class: "helper" }, recMap[c] ? fmtPct(recMap[c].pct) + " da carteira" : "sem registro")
       ))),
       "Faixas de recência da carteira mapeada.");
-    return h("section", { class: "section", "data-sec": 0 },
+   return h("section", { class: "section", "data-sec": 0 },
       sectionHead("01", "Visão geral", "Leitura consolidada da carteira, da atividade e do ritmo da unidade."),
+      card("Mapa do Brasil por UF", "Cor por temperatura do estado · clique para abrir o diagnóstico", "DER", mapaBrasil(rows("#UF")),
+        h("div", { class: "legend" }, TEMPS.map(t => h("span", {}, h("span", { class: "temp-chip " + t.cls }), t.label)))),
       kpis,
       h("div", { class: "grid g3" }, tempCard, velo, recCard)
     );
-  }
 
   function secao02() {
     const ufRows = rows("#UF");
@@ -1869,12 +1900,11 @@ dialog.dlg::backdrop{background:rgba(17,17,17,.45);}
       } : null
     });
     const recon = card("Reconciliação", "Carteira mapeada versus base bruta", "DER",
-      h("div", { class: "grid g2", style: "gap:10px;" },
-        kpi("Carteira mapeada", fmtInt(getRecon("carteira_mapeada")), "clientes", "DER"),
-        kpi("Fora da dimensão", fmtInt(getRecon("fora_dimensao")), "não mapeados", "DER"),
-        kpi("Base bruta", fmtInt(getRecon("base_bruta")), "registros", "MED"),
-        kpi("% mapeado", fmtPct(getRecon("pct_mapeado")), "da base bruta", "DER")
-      ));
+      h("div", { class: "grid g3" },
+        card("Mapa do Brasil por UF", "Cor por temperatura · clique numa UF para o detalhe", "DER", mapaBrasil(ufRows),
+          h("div", { class: "legend" }, TEMPS.map(t => h("span", {}, h("span", { class: "temp-chip " + t.cls }), t.label)))),
+        h("div", { class: "span-2", style: "display:flex;flex-direction:column;gap:16px;min-width:0;" }, recon)
+      ),
     const terr = tabela("terr", [
       { key: "territorio", label: "Território" },
       { key: "representacao", label: "Representação" },
