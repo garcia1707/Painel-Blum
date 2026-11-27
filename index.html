@@ -1877,8 +1877,9 @@ function abrirDrawer(uf) {
       card("Mapa do Brasil por UF", "Cor por temperatura do estado · clique para abrir o diagnóstico", "DER", mapaBrasil(rows("#UF")),
         h("div", { class: "legend" }, TEMPS.map(t => h("span", {}, h("span", { class: "temp-chip " + t.cls }), t.label)))),
       kpis,
-      h("div", { class: "grid g3" }, tempCard, velo, recCard)
+     h("div", { class: "grid g3" }, tempCard, velo, recCard)
     );
+  }
 
   function secao02() {
     const ufRows = rows("#UF");
